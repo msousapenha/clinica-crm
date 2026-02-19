@@ -13,7 +13,7 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 
 export default function Agenda({ pacientes }) {
   // --- ESTADOS DA AGENDA E MODAL ---
-  const [dataCalendario, setDataCalendario] = useState(new Date(2026, 1, 16)); 
+  const [dataCalendario, setDataCalendario] = useState(new Date(2026, 1, 16));
   const [viewCalendario, setViewCalendario] = useState('week');
   const [modalAgendamentoAberto, setModalAgendamentoAberto] = useState(false);
   const [novaDataSelecionada, setNovaDataSelecionada] = useState(new Date());
@@ -24,13 +24,13 @@ export default function Agenda({ pacientes }) {
       title: 'Limpeza de Pele - Ana Silva',
       start: new Date(2026, 1, 16, 14, 0),
       end: new Date(2026, 1, 16, 15, 30),
-      status: 'confirmado', 
+      status: 'confirmado',
     },
     {
       title: 'Avaliação - Beatriz Costa',
       start: new Date(2026, 1, 17, 10, 0),
       end: new Date(2026, 1, 17, 10, 30),
-      status: 'agendado', 
+      status: 'agendado',
     }
   ]);
 
@@ -95,7 +95,7 @@ export default function Agenda({ pacientes }) {
       <div className="p-8 max-w-7xl mx-auto w-full h-full flex flex-col animate-in fade-in duration-300 relative">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-light text-gray-800">Agenda de Atendimentos</h1>
-          <button 
+          <button
             onClick={() => abrirModalAgendamento(new Date())}
             className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-lg shadow transition-colors"
           >
@@ -143,8 +143,8 @@ export default function Agenda({ pacientes }) {
             onSelectEvent={(event) => alert(`Editar: ${event.title}`)}
             onSelectSlot={(slotInfo) => abrirModalAgendamento(slotInfo.start)}
             selectable={true}
-            min={new Date(2026, 1, 1, 8, 0)} 
-            max={new Date(2026, 1, 1, 20, 0)} 
+            min={new Date(2026, 1, 1, 8, 0)}
+            max={new Date(2026, 1, 1, 20, 0)}
           />
         </div>
       </div>
@@ -153,19 +153,19 @@ export default function Agenda({ pacientes }) {
       {modalAgendamentoAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 m-4 animate-in zoom-in-95 duration-200">
-            
+
             <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
               <h2 className="text-xl font-bold text-gray-800">Detalhes do Agendamento</h2>
               <button onClick={fecharModalAgendamento} className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={salvarAgendamento} className="space-y-5">
-              
+
               <div style={{ position: 'relative', zIndex: 100 }}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
-                <Select 
+                <Select
                   options={opcoesPacientes}
                   styles={selectCustomStyles}
                   placeholder="Digite para procurar paciente..."
@@ -177,39 +177,38 @@ export default function Agenda({ pacientes }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Procedimento</label>
-                    <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all">
-                      <option>Limpeza de Pele</option>
-                      <option>Toxina Botulínica</option>
-                      <option>Microagulhamento</option>
-                      <option>Avaliação</option>
-                    </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Procedimento</label>
+                  <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all">
+                    <option>Limpeza de Pele</option>
+                    <option>Toxina Botulínica</option>
+                    <option>Microagulhamento</option>
+                    <option>Avaliação</option>
+                  </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Profissional</label>
-                    <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all">
-                      <option>Dra. Fernanda Rocha</option>
-                      <option>Dra. Marina</option>
-                    </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Profissional</label>
+                  <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all">
+                    <option>Dra. Jordania</option>
+                  </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                    <input type="date" defaultValue={format(novaDataSelecionada, 'yyyy-MM-dd')} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                  <input type="date" defaultValue={format(novaDataSelecionada, 'yyyy-MM-dd')} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all" />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Horário de Início</label>
-                    <input type="time" defaultValue={format(novaDataSelecionada, 'HH:mm')} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Horário de Início</label>
+                  <input type="time" defaultValue={format(novaDataSelecionada, 'HH:mm')} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status Inicial</label>
                 <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all">
-                    <option value="agendado">Agendado (Aguardar Confirmação)</option>
-                    <option value="confirmado">Confirmado (Paciente já confirmou)</option>
+                  <option value="agendado">Agendado (Aguardar Confirmação)</option>
+                  <option value="confirmado">Confirmado (Paciente já confirmou)</option>
                 </select>
               </div>
 

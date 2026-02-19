@@ -16,7 +16,7 @@ export default function Pacientes({ pacientes }) {
     {
       id: 1,
       data: '10/01/2026 - 15:30',
-      profissional: 'Dra. Marina',
+      profissional: 'Dra. Jordania',
       texto: '<p>Paciente compareceu para primeira sessão de <strong>Microagulhamento</strong>.</p><ul><li>Aplicado anestésico tópico por 30 min.</li><li>Agulhas de 1.5mm.</li><li><em>Sangramento puntiforme leve, dentro do esperado.</em></li></ul><p>Orientada a usar muito protetor solar e evitar exposição direta por 7 dias.</p>'
     }
   ];
@@ -33,7 +33,7 @@ export default function Pacientes({ pacientes }) {
     setPacienteSelecionado(paciente);
     setAbaDetalhes('prontuario');
     setEditandoAnamnese(false);
-    setTextoEvolucao(''); 
+    setTextoEvolucao('');
     setTelaAtual('detalhes');
   };
 
@@ -42,7 +42,7 @@ export default function Pacientes({ pacientes }) {
       <div className="p-8 max-w-6xl mx-auto w-full animate-in fade-in duration-300">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-light text-gray-800">Pacientes</h1>
-          <button 
+          <button
             onClick={() => setTelaAtual('formulario')}
             className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-lg shadow transition-colors"
           >
@@ -53,9 +53,9 @@ export default function Pacientes({ pacientes }) {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input 
-              type="text" 
-              placeholder="Buscar por nome ou WhatsApp..." 
+            <input
+              type="text"
+              placeholder="Buscar por nome ou WhatsApp..."
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-rose-200 outline-none transition-all"
@@ -85,7 +85,7 @@ export default function Pacientes({ pacientes }) {
                   <td className="p-4 text-gray-600">{p.whatsapp}</td>
                   <td className="p-4 text-gray-600">{p.ultimaVisita}</td>
                   <td className="p-4 text-right">
-                    <button 
+                    <button
                       onClick={() => abrirDetalhes(p)}
                       className="text-rose-600 hover:text-rose-800 font-medium"
                     >
@@ -112,7 +112,7 @@ export default function Pacientes({ pacientes }) {
         <button onClick={() => setTelaAtual('lista')} className="flex items-center gap-2 text-gray-500 hover:text-gray-800 mb-6 transition-colors">
           <ArrowLeft size={20} /> Voltar para lista
         </button>
-        
+
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-2xl font-light text-gray-800 mb-6">Cadastrar Novo Paciente</h2>
           <form className="space-y-6">
@@ -127,8 +127,8 @@ export default function Pacientes({ pacientes }) {
               </div>
             </div>
             <div className="flex justify-end pt-4">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setTelaAtual('lista')}
                 className="bg-rose-600 text-white px-6 py-3 rounded-lg hover:bg-rose-700 transition-colors font-medium"
               >
@@ -161,13 +161,13 @@ export default function Pacientes({ pacientes }) {
         </div>
 
         <div className="flex border-b border-gray-200 mb-6">
-          <button 
+          <button
             onClick={() => setAbaDetalhes('prontuario')}
             className={`px-6 py-3 font-medium flex items-center gap-2 border-b-2 transition-colors ${abaDetalhes === 'prontuario' ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             <FileText size={18} /> Prontuário & Evolução
           </button>
-          <button 
+          <button
             onClick={() => setAbaDetalhes('consultas')}
             className={`px-6 py-3 font-medium flex items-center gap-2 border-b-2 transition-colors ${abaDetalhes === 'consultas' ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
@@ -178,16 +178,16 @@ export default function Pacientes({ pacientes }) {
         {abaDetalhes === 'prontuario' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              
+
               {/* Anamnese Dinâmica */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">Anamnese</h3>
-                  <button 
+                  <button
                     onClick={() => setEditandoAnamnese(!editandoAnamnese)}
                     className="text-rose-600 text-sm font-medium hover:text-rose-800 flex items-center gap-1"
                   >
-                    {editandoAnamnese ? 'Cancelar' : <><Edit3 size={16}/> Preencher/Editar</>}
+                    {editandoAnamnese ? 'Cancelar' : <><Edit3 size={16} /> Preencher/Editar</>}
                   </button>
                 </div>
 
@@ -216,8 +216,8 @@ export default function Pacientes({ pacientes }) {
                       </div>
                     </div>
                     <div className="flex justify-end pt-2">
-                      <button 
-                        onClick={() => setEditandoAnamnese(false)} 
+                      <button
+                        onClick={() => setEditandoAnamnese(false)}
                         className="bg-rose-600 text-white px-5 py-2 rounded-lg hover:bg-rose-700 text-sm font-medium transition-colors"
                       >
                         Salvar Anamnese
@@ -237,9 +237,9 @@ export default function Pacientes({ pacientes }) {
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800">Nova Evolução Diária</h3>
                 <div className="border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-rose-200 focus-within:border-rose-400 transition-all">
-                  <DefaultEditor 
-                    value={textoEvolucao} 
-                    onChange={(e) => setTextoEvolucao(e.target.value)} 
+                  <DefaultEditor
+                    value={textoEvolucao}
+                    onChange={(e) => setTextoEvolucao(e.target.value)}
                     containerProps={{ style: { height: '200px', backgroundColor: '#f9fafb', border: 'none' } }}
                   />
                 </div>
@@ -255,14 +255,14 @@ export default function Pacientes({ pacientes }) {
                 <h3 className="text-lg font-semibold mb-6 text-gray-800 flex items-center gap-2">
                   <Clock size={20} className="text-gray-400" /> Histórico de Evoluções
                 </h3>
-                
+
                 <div className="space-y-8 relative before:absolute before:top-2 before:bottom-0 before:left-3 before:w-0.5 before:bg-gray-200">
                   {historicoEvolucoes.map((ev) => (
                     <div key={ev.id} className="relative pl-10">
                       <div className="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-rose-400 rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
                       </div>
-                      
+
                       <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-start mb-4">
                           <div>
@@ -270,9 +270,9 @@ export default function Pacientes({ pacientes }) {
                             <p className="text-sm text-gray-500">Registrado por: {ev.profissional}</p>
                           </div>
                         </div>
-                        <div 
-                          className="text-gray-700 text-sm prose prose-sm max-w-none prose-rose" 
-                          dangerouslySetInnerHTML={{ __html: ev.texto }} 
+                        <div
+                          className="text-gray-700 text-sm prose prose-sm max-w-none prose-rose"
+                          dangerouslySetInnerHTML={{ __html: ev.texto }}
                         />
                       </div>
                     </div>
@@ -281,7 +281,7 @@ export default function Pacientes({ pacientes }) {
               </div>
 
             </div>
-            
+
             {/* Galeria de Imagens */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-8">
               <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
@@ -296,7 +296,7 @@ export default function Pacientes({ pacientes }) {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-             <table className="w-full text-left">
+            <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 text-sm">
                 <tr>
                   <th className="p-4">Data</th>
