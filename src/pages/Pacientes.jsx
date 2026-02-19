@@ -309,7 +309,7 @@ export default function Pacientes({ pacientes }) {
                 <tr>
                   <td className="p-4 font-medium">15/02/2026 - 14:00</td>
                   <td className="p-4 text-gray-600">Limpeza de Pele Profunda</td>
-                  <td className="p-4 text-gray-600">Dra. Marina</td>
+                  <td className="p-4 text-gray-600">Dra. Jordania</td>
                   <td className="p-4"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Concluído</span></td>
                 </tr>
               </tbody>
