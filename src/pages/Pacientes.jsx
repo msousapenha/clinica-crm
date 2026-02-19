@@ -39,7 +39,7 @@ export default function Pacientes({ pacientes }) {
 
   if (telaAtual === 'lista') {
     return (
-      <div className="p-8 max-w-6xl mx-auto w-full animate-in fade-in duration-300">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto w-full animate-in fade-in duration-300">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-light text-gray-800">Pacientes</h1>
           <button
@@ -64,38 +64,40 @@ export default function Pacientes({ pacientes }) {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
-                <th className="p-4 font-medium">Nome do Paciente</th>
-                <th className="p-4 font-medium">WhatsApp</th>
-                <th className="p-4 font-medium">Última Visita</th>
-                <th className="p-4 font-medium text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pacientesFiltrados.map((p) => (
-                <tr key={p.id} className="hover:bg-rose-50/50 transition-colors">
-                  <td className="p-4 font-medium text-gray-800 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center font-bold">
-                      {p.nome.charAt(0)}
-                    </div>
-                    {p.nome}
-                  </td>
-                  <td className="p-4 text-gray-600">{p.whatsapp}</td>
-                  <td className="p-4 text-gray-600">{p.ultimaVisita}</td>
-                  <td className="p-4 text-right">
-                    <button
-                      onClick={() => abrirDetalhes(p)}
-                      className="text-rose-600 hover:text-rose-800 font-medium"
-                    >
-                      Ver Ficha
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                  <th className="p-4 font-medium">Nome do Paciente</th>
+                  <th className="p-4 font-medium">WhatsApp</th>
+                  <th className="p-4 font-medium">Última Visita</th>
+                  <th className="p-4 font-medium text-right">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pacientesFiltrados.map((p) => (
+                  <tr key={p.id} className="hover:bg-rose-50/50 transition-colors">
+                    <td className="p-4 font-medium text-gray-800 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center font-bold">
+                        {p.nome.charAt(0)}
+                      </div>
+                      {p.nome}
+                    </td>
+                    <td className="p-4 text-gray-600">{p.whatsapp}</td>
+                    <td className="p-4 text-gray-600">{p.ultimaVisita}</td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => abrirDetalhes(p)}
+                        className="text-rose-600 hover:text-rose-800 font-medium"
+                      >
+                        Ver Ficha
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {pacientesFiltrados.length === 0 && (
             <div className="p-12 text-center text-gray-500">
               Nenhum paciente encontrado com "{termoBusca}"

@@ -92,7 +92,7 @@ export default function Agenda({ pacientes }) {
   return (
     <>
       {/* TELA DA AGENDA */}
-      <div className="p-8 max-w-7xl mx-auto w-full h-full flex flex-col animate-in fade-in duration-300 relative">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto w-full h-full flex flex-col animate-in fade-in duration-300 relative">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-light text-gray-800">Agenda de Atendimentos</h1>
           <button

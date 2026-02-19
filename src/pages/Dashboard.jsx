@@ -31,7 +31,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
       <div className="mb-8">
         <h1 className="text-3xl font-light text-gray-800">Painel de Performance</h1>
         <p className="text-sm text-gray-500">Visão geral do Instituto Fernanda Rocha</p>

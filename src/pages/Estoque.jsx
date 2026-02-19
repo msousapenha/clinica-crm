@@ -26,7 +26,7 @@ export default function Estoque() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-300">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-light text-gray-800">Controle de Estoque</h1>
@@ -80,60 +80,64 @@ export default function Estoque() {
                 />
               </div>
             </div>
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
-                <tr>
-                  <th className="p-4">Produto</th>
-                  <th className="p-4 text-center">Quantidade</th>
-                  <th className="p-4 text-center">Status</th>
-                  <th className="p-4 text-right">Preço Médio</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
-                {produtos.map(p => (
-                  <tr key={p.id} className="hover:bg-gray-50/50">
-                    <td className="p-4 font-medium text-gray-700">{p.nome}</td>
-                    <td className="p-4 text-center font-bold">{p.qtd} {p.unidade}s</td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${p.qtd <= p.min ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                        {p.qtd <= p.min ? 'Baixo' : 'Ok'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right text-gray-500">R$ {p.preco.toFixed(2)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left whitespace-nowrap min-w-[600px]">
+                <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                  <tr>
+                    <th className="p-4">Produto</th>
+                    <th className="p-4 text-center">Quantidade</th>
+                    <th className="p-4 text-center">Status</th>
+                    <th className="p-4 text-right">Preço Médio</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm">
+                  {produtos.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50/50">
+                      <td className="p-4 font-medium text-gray-700">{p.nome}</td>
+                      <td className="p-4 text-center font-bold">{p.qtd} {p.unidade}s</td>
+                      <td className="p-4 text-center">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${p.qtd <= p.min ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                          {p.qtd <= p.min ? 'Baixo' : 'Ok'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right text-gray-500">R$ {p.preco.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       ) : (
         /* ABA: HISTÓRICO DE COMPRAS */
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-right-2 duration-300">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
-              <tr>
-                <th className="p-4">Data</th>
-                <th className="p-4">Produto</th>
-                <th className="p-4">Fornecedor</th>
-                <th className="p-4 text-center">Qtd</th>
-                <th className="p-4 text-right">Custo Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {historicoCompras.map(h => (
-                <tr key={h.id}>
-                  <td className="p-4 text-gray-500 font-mono text-xs">{h.data}</td>
-                  <td className="p-4">
-                    <div className="font-medium text-gray-800">{h.produto}</div>
-                    <div className="text-[10px] text-gray-400 uppercase">Lote: {h.lote}</div>
-                  </td>
-                  <td className="p-4 text-gray-600">{h.fornecedor}</td>
-                  <td className="p-4 text-center font-bold text-emerald-600">+{h.qtd}</td>
-                  <td className="p-4 text-right font-medium">R$ {(h.qtd * h.valorUnitario).toFixed(2)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap min-w-[600px]">
+              <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                <tr>
+                  <th className="p-4">Data</th>
+                  <th className="p-4">Produto</th>
+                  <th className="p-4">Fornecedor</th>
+                  <th className="p-4 text-center">Qtd</th>
+                  <th className="p-4 text-right">Custo Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm">
+                {historicoCompras.map(h => (
+                  <tr key={h.id}>
+                    <td className="p-4 text-gray-500 font-mono text-xs">{h.data}</td>
+                    <td className="p-4">
+                      <div className="font-medium text-gray-800">{h.produto}</div>
+                      <div className="text-[10px] text-gray-400 uppercase">Lote: {h.lote}</div>
+                    </td>
+                    <td className="p-4 text-gray-600">{h.fornecedor}</td>
+                    <td className="p-4 text-center font-bold text-emerald-600">+{h.qtd}</td>
+                    <td className="p-4 text-right font-medium">R$ {(h.qtd * h.valorUnitario).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
