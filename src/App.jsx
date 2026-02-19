@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Pacientes from './pages/Pacientes';
-import Agenda from './pages/Agenda'; // <--- A NOVA PÁGINA AQUI!
+import Agenda from './pages/Agenda';
 import Financeiro from './pages/Financeiro';
 import Estoque from './pages/Estoque';
 

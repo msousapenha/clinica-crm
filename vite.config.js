@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  // Troque "clinica-crm" pelo nome exato do seu repositório no GitHub
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
+  // IMPORTANT: must match your exact GitHub repository name
   base: '/clinica-crm/',
 })
