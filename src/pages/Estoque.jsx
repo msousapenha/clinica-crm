@@ -30,7 +30,7 @@ export default function Estoque() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-light text-gray-800">Controle de Estoque</h1>
-          <p className="text-sm text-gray-500">Gestão de insumos do Instituto Fernanda Rocha</p>
+          <p className="text-sm text-gray-500">Gestão de insumos da clinica</p>
         </div>
         <div className="flex gap-3">
           <button
