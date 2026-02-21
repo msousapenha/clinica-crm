@@ -1,6 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Calendar as CalendarIcon, Users, Settings, LogOut, DollarSign, Package, X } from 'lucide-react';
-
+import { LayoutDashboard, Calendar as CalendarIcon, Users, Settings, LogOut, DollarSign, Package, X, Stethoscope } from 'lucide-react';
 export default function Sidebar({ menuAtivo, setMenuAtivo, menuAberto, setMenuAberto }) {
 
   // Função para fechar o menu no celular ao clicar em um link
@@ -39,6 +38,11 @@ export default function Sidebar({ menuAtivo, setMenuAtivo, menuAberto, setMenuAb
           <button onClick={() => navegarPara('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${menuAtivo === 'dashboard' ? 'bg-rose-500/10 text-rose-400' : 'hover:bg-slate-800 hover:text-white'}`}>
             <LayoutDashboard size={20} />
             <span className="font-medium">Dashboard</span>
+          </button>
+
+          <button onClick={() => navegarPara('profissionais')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${menuAtivo === 'profissionais' ? 'bg-rose-500/10 text-rose-400' : 'hover:bg-slate-800 hover:text-white'}`}>
+            <Stethoscope size={20} />
+            <span className="font-medium">Equipe</span>
           </button>
 
           <button onClick={() => navegarPara('agenda')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${menuAtivo === 'agenda' ? 'bg-rose-500/10 text-rose-400' : 'hover:bg-slate-800 hover:text-white'}`}>
