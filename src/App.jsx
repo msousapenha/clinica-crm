@@ -9,24 +9,29 @@ import Agenda from './pages/Agenda';
 import Financeiro from './pages/Financeiro';
 import Estoque from './pages/Estoque';
 import Profissionais from './pages/Profissionais';
-import Login from './pages/Login'; // <-- 1. IMPORTAÇÃO AQUI
+import Login from './pages/Login'; 
+import Procedimentos from './pages/Procedimentos';
+import Usuarios from './pages/Usuarios';
 
-export default function App() {
-  const [autenticado, setAutenticado] = useState(false); // <-- 2. NOVO ESTADO AQUI
+// Importa o Contexto de Autenticação
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+// Criamos um componente interno que "consome" o contexto
+function MainApp() {
+  const { logado, carregando } = useAuth();
   const [menuAtivo, setMenuAtivo] = useState('dashboard');
   const [menuAberto, setMenuAberto] = useState(false);
 
-  const pacientes = [
-    { id: 1, nome: 'Ana Silva', whatsapp: '(11) 98765-4321', ultimaVisita: '15/02/2026', status: 'Ativo' },
-    { id: 2, nome: 'Beatriz Costa', whatsapp: '(11) 91234-5678', ultimaVisita: '10/01/2026', status: 'Inativo' },
-  ];
-
-  // <-- 3. A TRAVA DE SEGURANÇA FICA AQUI
-  if (!autenticado) {
-    return <Login onLogin={() => setAutenticado(true)} />;
+  // Evita a tela piscar enquanto lê o localStorage
+  if (carregando) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500">Carregando sistema...</div>;
   }
 
-  // A partir daqui, o código continua exatamente igual ao que você já tem...
+  // TRAVA DE SEGURANÇA REAL BASEADA NO TOKEN JWT
+  if (!logado) {
+    return <Login />; // O AuthContext cuida de fazer o login e mudar o estado 'logado'
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden relative font-sans">
       <Sidebar 
@@ -39,7 +44,7 @@ export default function App() {
       {/* ÁREA DE CONTEÚDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden z-0">
 
-        {/* HEADER MOBILE (Só aparece em telas pequenas) */}
+        {/* HEADER MOBILE */}
         <header className="md:hidden bg-white h-16 border-b border-gray-200 flex items-center justify-between px-4 shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center">
@@ -59,13 +64,23 @@ export default function App() {
         <main className="flex-1 overflow-y-auto w-full">
           {menuAtivo === 'dashboard' && <Dashboard />}
           {menuAtivo === 'profissionais' && <Profissionais />}
-          {menuAtivo === 'agenda' && <Agenda pacientes={pacientes} />}
-          {menuAtivo === 'clientes' && <Pacientes pacientes={pacientes} />}
+          {menuAtivo === 'agenda' && <Agenda />}
+          {menuAtivo === 'clientes' && <Pacientes />}
           {menuAtivo === 'financeiro' && <Financeiro />}
           {menuAtivo === 'estoque' && <Estoque />}
+          {menuAtivo === 'procedimentos' && <Procedimentos />}
+          {menuAtivo === 'usuarios' && <Usuarios />}
         </main>
-
       </div>
     </div>
+  );
+}
+
+// Envelopa o App no provedor para liberar o uso do useAuth lá dentro
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }

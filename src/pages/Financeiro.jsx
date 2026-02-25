@@ -1,223 +1,228 @@
-import React, { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Download, X, Calendar as CalendarIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar as CalendarIcon, Filter } from 'lucide-react';
 import Select from 'react-select';
-import { format, isWithinInterval, parse } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Financeiro() {
+  const API_URL = import.meta.env.VITE_API_URL;
+  const { token } = useAuth();
+
+  const [transacoes, setTransacoes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
-  const [tipoLancamento, setTipoLancamento] = useState('entrada');
 
-  // --- ESTADOS PARA FILTRO DE DATA ---
-  // Iniciamos com o mês de Fevereiro de 2026 como padrão (conforme seu projeto)
-  const [dataInicio, setDataInicio] = useState('2026-02-01');
-  const [dataFim, setDataFim] = useState('2026-02-28');
+  // Filtros de Data (Padrão: Mês Atual)
+  const hoje = new Date();
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
 
-  // --- DADOS MOCKADOS (Simulando Banco de Dados) ---
-  const [transacoes, setTransacoes] = useState([
-    { id: 1, data: '2026-02-16', descricao: 'Limpeza de Pele - Ana Silva', categoria: 'Procedimento', valor: 150.00, tipo: 'entrada' },
-    { id: 2, data: '2026-02-16', descricao: 'Compra de Luvas', categoria: 'Insumos', valor: 85.90, tipo: 'saida' },
-    { id: 3, data: '2026-02-15', descricao: 'Toxina Botulínica - Carla Mendes', categoria: 'Procedimento', valor: 1200.00, tipo: 'entrada' },
-    { id: 4, data: '2026-02-10', descricao: 'Aluguel Sala', categoria: 'Fixo', valor: 1500.00, tipo: 'saida' },
-  ]);
+  const [dataInicio, setDataInicio] = useState(primeiroDia);
+  const [dataFim, setDataFim] = useState(ultimoDia);
 
-  // --- LÓGICA DE FILTRAGEM E CÁLCULO ---
-  const transacoesFiltradas = transacoes.filter(t => {
-    const dataTransacao = t.data;
-    return dataTransacao >= dataInicio && dataTransacao <= dataFim;
-  });
+  // Formulário Manual
+  const [tipoLancamento, setTipoLancamento] = useState('DESPESA'); // Padrão Despesa (já que receitas vêm automático)
+  const [descManual, setDescManual] = useState('');
+  const [valorManual, setValorManual] = useState('');
+  const [catManual, setCatManual] = useState({ value: 'FIXO', label: 'Custo Fixo (Aluguel, Luz...)' });
+  const [dataManual, setDataManual] = useState(new Date().toISOString().split('T')[0]);
 
-  const totalEntradas = transacoesFiltradas
-    .filter(t => t.tipo === 'entrada')
-    .reduce((acc, t) => acc + t.valor, 0);
+  useEffect(() => {
+    carregarTransacoes();
+  }, [dataInicio, dataFim]); // Recarrega se mudar a data
 
-  const totalSaidas = transacoesFiltradas
-    .filter(t => t.tipo === 'saida')
-    .reduce((acc, t) => acc + t.valor, 0);
+  const carregarTransacoes = async () => {
+    try {
+      setCarregando(true);
+      const res = await fetch(`${API_URL}/financeiro?inicio=${dataInicio}&fim=${dataFim}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setTransacoes(await res.json());
+      }
+    } catch (error) { console.error(error); } 
+    finally { setCarregando(false); }
+  };
 
-  const lucroLiquido = totalEntradas - totalSaidas;
+  const salvarLancamentoManual = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_URL}/financeiro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          descricao: descManual,
+          valor: valorManual,
+          tipo: tipoLancamento,
+          categoria: catManual.value,
+          data: dataManual
+        })
+      });
 
-  // Estilos e Opções (conforme anteriores)
-  const categoriasEntrada = [{ value: 'procedimento', label: 'Procedimento Estético' }];
-  const categoriasSaida = [{ value: 'insumos', label: 'Insumos' }];
-  const selectStyles = { control: (base) => ({ ...base, backgroundColor: '#f9fafb', borderRadius: '0.5rem' }) };
+      if (res.ok) {
+        setModalAberto(false);
+        carregarTransacoes();
+        // Reset
+        setDescManual(''); setValorManual('');
+      }
+    } catch (error) { alert("Erro ao salvar"); }
+  };
+
+  // Cálculos
+  const totalEntradas = transacoes.filter(t => t.tipo === 'RECEITA').reduce((acc, t) => acc + t.valor, 0);
+  const totalSaidas = transacoes.filter(t => t.tipo === 'DESPESA').reduce((acc, t) => acc + t.valor, 0);
+  const lucro = totalEntradas - totalSaidas;
+
+  const opcoesDespesa = [
+    { value: 'FIXO', label: 'Custo Fixo (Aluguel, Energia)' },
+    { value: 'IMPOSTO', label: 'Impostos / Taxas' },
+    { value: 'PESSOAL', label: 'Pagamento de Funcionários' },
+    { value: 'OUTROS', label: 'Outras Despesas' }
+  ];
+  
+  const opcoesReceita = [
+    { value: 'OUTROS', label: 'Outras Receitas' } // Procedimentos já entram automático
+  ];
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-300">
-
-      {/* CABEÇALHO */}
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in">
+      
+      {/* HEADER + FILTROS */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-light text-gray-800">Fluxo de Caixa</h1>
+          <h1 className="text-3xl font-light text-gray-800">Financeiro</h1>
+          <p className="text-sm text-gray-500">Fluxo de caixa consolidado</p>
         </div>
 
-        {/* FILTRO DE DATAS (DE/ATÉ) */}
-        <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 px-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
             <CalendarIcon size={16} className="text-gray-400" />
-            <input
-              type="date"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-              className="text-xs font-medium outline-none border-none bg-transparent"
-            />
+            <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="text-sm bg-transparent outline-none" />
+            <span className="text-gray-300">até</span>
+            <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="text-sm bg-transparent outline-none" />
           </div>
-          <span className="text-gray-300">|</span>
-          <div className="flex items-center gap-2 px-2">
-            <input
-              type="date"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-              className="text-xs font-medium outline-none border-none bg-transparent"
-            />
-          </div>
+          
+          <button onClick={() => setModalAberto(true)} className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-bold shadow-lg transition-all">
+            <Plus size={18}/> Lançar Manual
+          </button>
         </div>
-
-        <button
-          onClick={() => setModalAberto(true)}
-          className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-lg shadow transition-colors text-sm font-medium"
-        >
-          <Plus size={20} /> Novo Lançamento
-        </button>
       </div>
 
-      {/* CARDS DINÂMICOS (Calculam conforme o filtro de data) */}
+      {/* DASHBOARD CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-500">
-          <div className="text-emerald-600 mb-1 flex items-center gap-2 italic text-sm">
-            <TrendingUp size={16} /> Entradas no período
+        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-emerald-500">
+          <div className="text-emerald-600 mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+            <TrendingUp size={18}/> Receitas
           </div>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className="text-3xl font-bold text-gray-800">
             {totalEntradas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-rose-500">
-          <div className="text-rose-600 mb-1 flex items-center gap-2 italic text-sm">
-            <TrendingDown size={16} /> Saídas no período
+        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-rose-500">
+          <div className="text-rose-600 mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+            <TrendingDown size={18}/> Despesas
           </div>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className="text-3xl font-bold text-gray-800">
             {totalSaidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
 
-        <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 ${lucroLiquido >= 0 ? 'border-l-blue-500' : 'border-l-orange-500'}`}>
-          <div className="text-blue-600 mb-1 flex items-center gap-2 italic text-sm">
-            <DollarSign size={16} /> Lucro do Período
+        <div className={`bg-white p-6 rounded-xl shadow-sm border-l-4 ${lucro >= 0 ? 'border-l-blue-600' : 'border-l-orange-500'}`}>
+          <div className={`${lucro >= 0 ? 'text-blue-600' : 'text-orange-600'} mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider`}>
+            <DollarSign size={18}/> Resultado Líquido
           </div>
-          <p className={`text-2xl font-bold ${lucroLiquido >= 0 ? 'text-gray-800' : 'text-rose-600'}`}>
-            {lucroLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          <p className={`text-3xl font-bold ${lucro >= 0 ? 'text-gray-800' : 'text-rose-600'}`}>
+            {lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
       </div>
 
-      {/* TABELA DE RESULTADOS FILTRADOS */}
+      {/* TABELA */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Detalhamento dos Lançamentos</h3>
-          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-bold">
-            {transacoesFiltradas.length} REGISTROS
-          </span>
-        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left whitespace-nowrap min-w-[600px]">
-            <tbody className="divide-y divide-gray-100">
-              {transacoesFiltradas.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="p-4 text-xs text-gray-400 font-mono">
-                    {format(parse(t.data, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')}
-                  </td>
-                  <td className="p-4 text-sm font-medium text-gray-700 group-hover:text-rose-600 transition-colors">
-                    {t.descricao}
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-bold uppercase tracking-tighter">
-                      {t.categoria}
-                    </span>
-                  </td>
-                  <td className={`p-4 text-sm text-right font-bold ${t.tipo === 'entrada' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {t.tipo === 'entrada' ? '+ ' : '- '}
-                    {t.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </td>
-                </tr>
-              ))}
-              {transacoesFiltradas.length === 0 && (
-                <tr>
-                  <td colSpan="4" className="p-10 text-center text-gray-400 italic text-sm">
-                    Nenhum lançamento encontrado para este período.
-                  </td>
-                </tr>
+          <table className="w-full text-left whitespace-nowrap">
+            <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+              <tr>
+                <th className="p-4">Data</th>
+                <th className="p-4">Descrição</th>
+                <th className="p-4">Categoria</th>
+                <th className="p-4 text-center">Origem</th>
+                <th className="p-4 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {carregando ? (
+                <tr><td colSpan="5" className="p-8 text-center text-gray-400">Carregando...</td></tr>
+              ) : transacoes.length === 0 ? (
+                <tr><td colSpan="5" className="p-8 text-center text-gray-400 italic">Nenhum lançamento neste período.</td></tr>
+              ) : (
+                transacoes.map(t => (
+                  <tr key={t.id} className="hover:bg-gray-50">
+                    <td className="p-4 text-gray-500 font-mono text-xs">
+                      {format(parseISO(t.data), 'dd/MM/yyyy')}
+                    </td>
+                    <td className="p-4 font-medium text-gray-700">{t.descricao}</td>
+                    <td className="p-4">
+                      <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold uppercase">{t.categoria}</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      {t.agendamentoId && <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">AGENDA</span>}
+                      {t.movimentacaoId && <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-1 rounded border border-orange-100">ESTOQUE</span>}
+                      {!t.agendamentoId && !t.movimentacaoId && <span className="text-[10px] text-gray-400">MANUAL</span>}
+                    </td>
+                    <td className={`p-4 text-right font-bold ${t.tipo === 'RECEITA' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {t.tipo === 'RECEITA' ? '+' : '-'} {t.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* MODAL COM SELECT BOXES */}
+      {/* MODAL MANUAL */}
       {modalAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Novo Lançamento</h2>
-              <button onClick={() => setModalAberto(false)} className="text-gray-400 hover:text-gray-700 p-1"><X size={20} /></button>
-            </div>
-
-            <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); setModalAberto(false); }}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Lançamento</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTipoLancamento('entrada')}
-                    className={`py-2 border-2 rounded-lg font-bold text-sm transition-all ${tipoLancamento === 'entrada' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-gray-100 text-gray-400'}`}
-                  >
-                    Receita (+)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipoLancamento('saida')}
-                    className={`py-2 border-2 rounded-lg font-bold text-sm transition-all ${tipoLancamento === 'saida' ? 'border-rose-500 text-rose-600 bg-rose-50' : 'border-gray-100 text-gray-400'}`}
-                  >
-                    Despesa (-)
-                  </button>
-                </div>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
+            <h2 className="text-xl font-bold mb-4">Lançamento Manual</h2>
+            <form onSubmit={salvarLancamentoManual} className="space-y-4">
+              <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+                <button type="button" onClick={() => setTipoLancamento('RECEITA')} className={`flex-1 py-2 rounded-md font-bold text-sm transition-all ${tipoLancamento === 'RECEITA' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400'}`}>Receita</button>
+                <button type="button" onClick={() => setTipoLancamento('DESPESA')} className={`flex-1 py-2 rounded-md font-bold text-sm transition-all ${tipoLancamento === 'DESPESA' ? 'bg-white text-rose-600 shadow-sm' : 'text-gray-400'}`}>Despesa</button>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                {/* SELECT BOX PARA CATEGORIAS */}
-                <Select
-                  options={tipoLancamento === 'entrada' ? categoriasEntrada : categoriasSaida}
-                  styles={selectStyles}
-                  placeholder="Selecione a categoria..."
-                  isSearchable
-                />
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Categoria</label>
+                <Select options={tipoLancamento === 'RECEITA' ? opcoesReceita : opcoesDespesa} value={catManual} onChange={setCatManual} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                <input type="text" placeholder="Ex: Botox facial - Ana" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400" />
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Descrição</label>
+                <input type="text" value={descManual} onChange={e => setDescManual(e.target.value)} className="w-full p-2 border rounded-lg" required placeholder={tipoLancamento === 'DESPESA' ? 'Ex: Conta de Luz' : 'Ex: Venda de Produto'} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                  <input type="number" placeholder="0,00" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-rose-400 font-bold" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Valor</label>
+                  <input type="number" step="0.01" value={valorManual} onChange={e => setValorManual(e.target.value)} className="w-full p-2 border rounded-lg" required placeholder="0,00" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                  <input type="date" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm" />
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Data</label>
+                  <input type="date" value={dataManual} onChange={e => setDataManual(e.target.value)} className="w-full p-2 border rounded-lg" required />
                 </div>
               </div>
 
-              <div className="pt-4">
-                <button type="submit" className="w-full py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-900 shadow-lg transition-all">
-                  Confirmar Lançamento
-                </button>
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setModalAberto(false)} className="flex-1 py-3 text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                <button type="submit" className="flex-1 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-900">Salvar</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
