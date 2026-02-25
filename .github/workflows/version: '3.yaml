@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # --- Banco de Dados (Isolado na rede interna do CRM) ---
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: db_Sup3r_S3cr3t_P4ss# # <--- TROQUE ESTA SENHA
+      POSTGRES_DB: clinica_db
+    volumes:
+      - postgres_data_crm:/var/lib/postgresql/data
+    networks:
+      - crm_internal
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+  # --- Backend API ---
+  backend:
+    image: ghcr.io/msousapenha/clinica-backend:latest
+    environment:
+      # Conecta no serviço 'db' pela rede interna
+      DATABASE_URL: postgresql://admin:db_Sup3r_S3cr3t_P4ss#@db:5432/clinica_db?schema=public
+      JWT_SECRET: "e3neqy2DPwSs6lbiWg9AjJdlc1KpwXkRkLn0jU9UcYO" # <--- TROQUE O SEGREDO
+      PORT: 3333
+      CORS_ORIGIN: "https://teste.jordaniamatias.cloud"
+    networks:
+      - crm_internal       # Para falar com o banco
+      - ChatwootClinicaNet # Para falar com o Traefik (Público)
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=ChatwootClinicaNet"
+        # Roteamento
+        - "traefik.http.routers.crm-backend.rule=Host(`api.jordaniamatias.cloud`)"
+        - "traefik.http.routers.crm-backend.entrypoints=websecure"
+        - "traefik.http.routers.crm-backend.tls=true"
+        - "traefik.http.routers.crm-backend.tls.certresolver=letsencryptresolver" # Nome exato extraído do seu inspect
+        # Porta do serviço
+        - "traefik.http.services.crm-backend.loadbalancer.server.port=3333"
+
+  # --- Frontend React ---
+  frontend:
+    image: ghcr.io/msousapenha/clinica-crm:latest
+    networks:
+      - ChatwootClinicaNet # Apenas rede pública (não precisa ver o banco)
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=ChatwootClinicaNet"
+        # Roteamento
+        - "traefik.http.routers.crm-frontend.rule=Host(`jordaniamatias.cloud`)"
+        - "traefik.http.routers.crm-frontend.entrypoints=websecure"
+        - "traefik.http.routers.crm-frontend.tls=true"
+        - "traefik.http.routers.crm-frontend.tls.certresolver=letsencryptresolver" # Nome exato extraído do seu inspect
+        # Porta do serviço (Nginx interno roda na 80)
+        - "traefik.http.services.crm-frontend.loadbalancer.server.port=80"
+
+volumes:
+  postgres_data_crm: # Volume nomeado para não misturar com o do Chatwoot
+
+networks:
+  # Rede interna apenas para o CRM (Banco <-> Back)
+  crm_internal:
+    driver: overlay
+    
+  # Rede pública existente (Traefik <-> Front/Back)
+  ChatwootClinicaNet:
+    external: true
