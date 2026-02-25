@@ -9,5 +9,5 @@ export default defineConfig({
     tailwindcss(),
   ],
   // IMPORTANT: must match your exact GitHub repository name
-  base: '/clinica-crm/',
+  // base: '/clinica-crm/',
 })
