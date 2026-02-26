@@ -100,7 +100,8 @@ export default function Estoque() {
           valorUnitario: custoEntrada,
           fornecedor: fornecedorEntrada,
           lote: loteEntrada,
-          validade: validadeEntrada
+          validade: validadeEntrada,
+          tipo: 'DESPESA'
         })
       });
 
