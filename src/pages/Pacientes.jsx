@@ -411,7 +411,7 @@ export default function Pacientes() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-8">
+            {/* <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-8">
               <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
                 <ImageIcon size={20} /> Galeria Antes/Depois
               </h3>
@@ -419,7 +419,7 @@ export default function Pacientes() {
                 <ImageIcon size={32} className="mx-auto mb-2" />
                 <p className="text-sm">Integração com fotos em breve</p>
               </div>
-            </div>
+            </div> */}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

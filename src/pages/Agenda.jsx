@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Trash2, CalendarDays, List, Download, FileText, Stethoscope, Package, Save, CheckCircle, AlertTriangle, FileSpreadsheet, Briefcase } from 'lucide-react';
+import { Plus, X, Trash2, CalendarDays, List, Download, FileText, Stethoscope, Package, Save, CheckCircle, AlertTriangle, FileSpreadsheet, Briefcase, User, Edit3 } from 'lucide-react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -25,7 +25,7 @@ export default function Agenda() {
   const [pacientes, setPacientes] = useState([]);
   const [profissionais, setProfissionais] = useState([]);
   const [produtos, setProdutos] = useState([]); 
-  const [listaProcedimentos, setListaProcedimentos] = useState([]); // Opções para o select
+  const [listaProcedimentos, setListaProcedimentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
   // --- ESTADOS DE UI ---
@@ -36,7 +36,7 @@ export default function Agenda() {
   const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
 
   // --- ESTADOS DO MODAL (FORMULÁRIO) ---
-  const [abaModal, setAbaModal] = useState('dados'); // 'dados' ou 'atendimento'
+  const [abaModal, setAbaModal] = useState('dados'); // 'dados', 'anamnese' ou 'atendimento'
   const [idEditando, setIdEditando] = useState(null);
   
   // Dados Básicos da Agenda
@@ -51,13 +51,19 @@ export default function Agenda() {
   const [insumosUsados, setInsumosUsados] = useState([]); 
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [qtdInsumo, setQtdInsumo] = useState(1);
-  const [procedimentosSelecionados, setProcedimentosSelecionados] = useState([]); // Array de objetos {value, label}
+  const [procedimentosSelecionados, setProcedimentosSelecionados] = useState([]);
+
+  // Dados da Anamnese
+  const [editandoAnamnese, setEditandoAnamnese] = useState(false);
+  const [alergias, setAlergias] = useState('');
+  const [roacutan, setRoacutan] = useState('Não');
+  const [gestanteLactante, setGestanteLactante] = useState('Não');
 
   // Estados do Relatório
   const [relatorioInicio, setRelatorioInicio] = useState('');
   const [relatorioFim, setRelatorioFim] = useState('');
 
-  // Verifica se o agendamento já foi finalizado para bloquear edição
+  // Verifica se o agendamento já foi finalizado
   const isFinalizado = status === 'Concluído' || status === 'Concluido';
 
   useEffect(() => {
@@ -74,7 +80,7 @@ export default function Agenda() {
         fetch(`${API_URL}/pacientes`, { headers }),
         fetch(`${API_URL}/profissionais`, { headers }),
         fetch(`${API_URL}/estoque/produtos`, { headers }),
-        fetch(`${API_URL}/procedimentos`, { headers }) // Busca Procedimentos
+        fetch(`${API_URL}/procedimentos`, { headers })
       ]);
 
       if(resAg.ok) setAgendamentos(await resAg.json());
@@ -84,13 +90,11 @@ export default function Agenda() {
       
       if(resProc.ok) {
         const dadosProc = await resProc.json();
-        // Formata para o React-Select: "Nome - R$ Valor"
         setListaProcedimentos(dadosProc.map(p => ({ 
           value: p.id, 
           label: `${p.nome} (R$ ${p.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})` 
         })));
       }
-
     } catch (erro) { console.error(erro); } finally { setCarregando(false); }
   };
 
@@ -103,31 +107,70 @@ export default function Agenda() {
     setData(format(start, 'yyyy-MM-dd'));
     setHora(format(start, 'HH:mm'));
     
-    // Reset da aba atendimento
+    // Reset aba atendimento e anamnese
     setTextoEvolucao('');
     setInsumosUsados([]);
     setProcedimentosSelecionados([]);
+    setAlergias('');
+    setRoacutan('Não');
+    setGestanteLactante('Não');
+    setEditandoAnamnese(false);
+    
     setAbaModal('dados');
     setModalAberto(true);
   };
 
-  const abrirEdicao = (evento) => {
+  const abrirEdicao = async (evento) => {
     const ag = evento.resource || evento;
     setIdEditando(ag.id);
-    setPacienteSelecionado(opcoesPacientes.find(p => p.value === ag.pacienteId));
+    const pacienteInfo = opcoesPacientes.find(p => p.value === ag.pacienteId);
+    setPacienteSelecionado(pacienteInfo);
     setProfissionalId(ag.profissionalId || '');
     setStatus(ag.status);
     const d = new Date(ag.dataHorario);
     setData(format(d, 'yyyy-MM-dd'));
     setHora(format(d, 'HH:mm'));
 
-    // Reset da aba atendimento (começa limpa para nova evolução)
-    // Nota: Se quisesse carregar dados antigos, teria que buscar na API aqui
+    // BUSCA A ANAMNESE DO PACIENTE
+    if (pacienteInfo) {
+      try {
+        const resAnamnese = await fetch(`${API_URL}/pacientes/${pacienteInfo.value}/anamnese`, { 
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resAnamnese.ok) {
+          const dataAnamnese = await resAnamnese.json();
+          setAlergias(dataAnamnese?.alergias || '');
+          setRoacutan(dataAnamnese?.roacutan || 'Não');
+          setGestanteLactante(dataAnamnese?.gestanteLactante || 'Não');
+        }
+      } catch (e) { console.error("Erro ao buscar anamnese:", e); }
+    }
+
+    // Reset aba atendimento
     setTextoEvolucao(''); 
     setInsumosUsados([]);
     setProcedimentosSelecionados([]);
+    setEditandoAnamnese(false); 
     setAbaModal('dados'); 
     setModalAberto(true);
+  };
+
+  // --- LÓGICA DE ANAMNESE ---
+  const salvarAnamneseDaAgenda = async () => {
+    if (!pacienteSelecionado?.value) return alert("Nenhum paciente selecionado.");
+    try {
+      const resposta = await fetch(`${API_URL}/pacientes/${pacienteSelecionado.value}/anamnese`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ alergias, roacutan, gestanteLactante })
+      });
+      if (resposta.ok) {
+        setEditandoAnamnese(false);
+      }
+    } catch (erro) { console.error("Erro ao salvar anamnese:", erro); }
   };
 
   // --- LÓGICA DE INSUMOS ---
@@ -162,7 +205,7 @@ export default function Agenda() {
 
     // CASO 1: FINALIZAR ATENDIMENTO (Aba Prontuário + Agendamento Existente)
     if (abaModal === 'atendimento' && idEditando) {
-      if (isFinalizado) return; // Segurança extra
+      if (isFinalizado) return;
 
       if(!window.confirm("Deseja finalizar o atendimento? Isso dará baixa no estoque, salvará a evolução e os procedimentos.")) return;
       
@@ -173,7 +216,7 @@ export default function Agenda() {
           body: JSON.stringify({
             textoEvolucao,
             insumos: insumosUsados.map(i => ({ produtoId: i.produtoId, qtd: i.qtd })),
-            procedimentosIds: procedimentosSelecionados.map(p => p.value) // Envia IDs dos procedimentos
+            procedimentosIds: procedimentosSelecionados.map(p => p.value)
           })
         });
 
@@ -389,16 +432,22 @@ export default function Agenda() {
 
             {/* Abas */}
             {idEditando && (
-              <div className="flex border-b px-6">
+              <div className="flex border-b px-6 overflow-x-auto">
                 <button 
                   onClick={() => setAbaModal('dados')}
-                  className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${abaModal === 'dados' ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500'}`}
+                  className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${abaModal === 'dados' ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                 >
                   <CalendarDays size={16}/> Dados da Agenda
                 </button>
                 <button 
+                  onClick={() => setAbaModal('anamnese')}
+                  className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${abaModal === 'anamnese' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <User size={16}/> Anamnese
+                </button>
+                <button 
                   onClick={() => setAbaModal('atendimento')}
-                  className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${abaModal === 'atendimento' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500'}`}
+                  className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${abaModal === 'atendimento' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                 >
                   <Stethoscope size={16}/> Prontuário & Insumos
                 </button>
@@ -441,7 +490,79 @@ export default function Agenda() {
                   </div>
                 )}
 
-                {/* ABA 2: ATENDIMENTO MÉDICO (Evolução + Insumos + Procedimentos) */}
+                {/* ABA 2: ANAMNESE */}
+                {abaModal === 'anamnese' && (
+                  <div className="space-y-6 animate-in slide-in-from-right-4">
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                      <div className="flex justify-between items-center mb-6">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <User size={20} className="text-blue-600"/> Histórico do Paciente
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">Dados fixos de saúde do paciente atual.</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setEditandoAnamnese(!editandoAnamnese)} 
+                          className="text-blue-600 text-sm font-medium hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          {editandoAnamnese ? 'Cancelar Edição' : <><Edit3 size={16} /> Preencher/Editar</>}
+                        </button>
+                      </div>
+
+                      {editandoAnamnese ? (
+                        <div className="space-y-4 bg-white p-5 rounded-lg border border-gray-200 shadow-sm animate-in fade-in duration-200">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Alergias conhecidas</label>
+                            <input type="text" value={alergias} onChange={e => setAlergias(e.target.value)} placeholder="Ex: Dipirona, iodo..." className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-400" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Faz uso de Roacutan?</label>
+                              <select value={roacutan} onChange={e => setRoacutan(e.target.value)} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-400">
+                                <option value="Não">Não</option>
+                                <option value="Sim (Atual)">Sim (Atual)</option>
+                                <option value="Sim (Finalizado)">Sim (Já finalizou há -6 meses)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Gestante ou Lactante?</label>
+                              <select value={gestanteLactante} onChange={e => setGestanteLactante(e.target.value)} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-400">
+                                <option value="Não">Não</option>
+                                <option value="Gestante">Gestante</option>
+                                <option value="Lactante">Lactante</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex justify-end pt-3">
+                            <button type="button" onClick={salvarAnamneseDaAgenda} className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm">
+                              Salvar Anamnese
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4 bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                          <div>
+                            <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Alergias</span>
+                            <p className="text-gray-800 font-medium">{alergias || 'Nenhuma declarada.'}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                            <div>
+                              <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Roacutan</span>
+                              <p className="text-gray-800 font-medium">{roacutan}</p>
+                            </div>
+                            <div>
+                              <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Gestante/Lactante</span>
+                              <p className="text-gray-800 font-medium">{gestanteLactante}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ABA 3: ATENDIMENTO MÉDICO (Evolução + Insumos + Procedimentos) */}
                 {abaModal === 'atendimento' && (
                   <div className="space-y-6 animate-in slide-in-from-right-4">
                     
@@ -522,8 +643,8 @@ export default function Agenda() {
               <div className="flex gap-3">
                 <button type="button" onClick={() => setModalAberto(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg">Cancelar</button>
                 
-                {/* BOTÃO INTELIGENTE: Bloqueado se finalizado */}
-                {!isFinalizado && (
+                {/* BOTÃO INTELIGENTE: Bloqueado se finalizado (exceto para aba Anamnese que não tem "Finalizar") */}
+                {!isFinalizado && abaModal !== 'anamnese' && (
                   <button 
                     type="submit" 
                     form="formAgendamento"
