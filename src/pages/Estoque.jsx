@@ -209,7 +209,10 @@ export default function Estoque() {
                     </td>
                     <td className="p-4 text-gray-600">{h.fornecedor || '-'}</td>
                     <td className="p-4 text-center font-bold text-emerald-600">+{h.qtd}</td>
-                    <td className="p-4 text-right font-medium">R$ {(h.qtd * h.valorUnitario).toFixed(2)}</td>
+                    <td className="p-4 text-right">
+                      <div className="font-medium text-gray-900">R$ {(h.qtd * h.valorUnitario).toFixed(2)}</div>
+                      <div className="text-[10px] text-gray-400">R$ {Number(h.valorUnitario).toFixed(2)} / un</div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
