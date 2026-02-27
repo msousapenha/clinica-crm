@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Trash2, CalendarDays, List, Download, FileText, Stethoscope, Package, Save, CheckCircle, AlertTriangle, FileSpreadsheet, Briefcase, User, Edit3 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Plus, X, Trash2, CalendarDays, List, Download, FileText, Stethoscope, Package, Save, CheckCircle, AlertTriangle, FileSpreadsheet, Briefcase, User, Edit3, Clock, History } from 'lucide-react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -53,11 +54,12 @@ export default function Agenda() {
   const [qtdInsumo, setQtdInsumo] = useState(1);
   const [procedimentosSelecionados, setProcedimentosSelecionados] = useState([]);
 
-  // Dados da Anamnese
+  // Dados da Anamnese e Histórico
   const [editandoAnamnese, setEditandoAnamnese] = useState(false);
   const [alergias, setAlergias] = useState('');
   const [roacutan, setRoacutan] = useState('Não');
   const [gestanteLactante, setGestanteLactante] = useState('Não');
+  const [historicoPaciente, setHistoricoPaciente] = useState([]); // <-- NOVO ESTADO
 
   // Estados do Relatório
   const [relatorioInicio, setRelatorioInicio] = useState('');
@@ -98,6 +100,30 @@ export default function Agenda() {
     } catch (erro) { console.error(erro); } finally { setCarregando(false); }
   };
 
+  // --- NOVA FUNÇÃO: Busca Anamnese e Histórico Juntos ---
+  const carregarDadosDoPaciente = async (pacienteId) => {
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [resAnamnese, resEvolucoes] = await Promise.all([
+        fetch(`${API_URL}/pacientes/${pacienteId}/anamnese`, { headers }),
+        fetch(`${API_URL}/pacientes/${pacienteId}/evolucoes`, { headers })
+      ]);
+
+      if (resAnamnese.ok) {
+        const dataAnamnese = await resAnamnese.json();
+        setAlergias(dataAnamnese?.alergias || '');
+        setRoacutan(dataAnamnese?.roacutan || 'Não');
+        setGestanteLactante(dataAnamnese?.gestanteLactante || 'Não');
+      }
+
+      if (resEvolucoes.ok) {
+        setHistoricoPaciente(await resEvolucoes.json());
+      }
+    } catch (e) {
+      console.error("Erro ao carregar prontuário do paciente:", e);
+    }
+  };
+
   // --- HANDLERS DO MODAL ---
   const abrirNovo = (start) => {
     setIdEditando(null);
@@ -114,6 +140,7 @@ export default function Agenda() {
     setAlergias('');
     setRoacutan('Não');
     setGestanteLactante('Não');
+    setHistoricoPaciente([]);
     setEditandoAnamnese(false);
     
     setAbaModal('dados');
@@ -131,19 +158,9 @@ export default function Agenda() {
     setData(format(d, 'yyyy-MM-dd'));
     setHora(format(d, 'HH:mm'));
 
-    // BUSCA A ANAMNESE DO PACIENTE
+    // Busca anamnese e histórico
     if (pacienteInfo) {
-      try {
-        const resAnamnese = await fetch(`${API_URL}/pacientes/${pacienteInfo.value}/anamnese`, { 
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (resAnamnese.ok) {
-          const dataAnamnese = await resAnamnese.json();
-          setAlergias(dataAnamnese?.alergias || '');
-          setRoacutan(dataAnamnese?.roacutan || 'Não');
-          setGestanteLactante(dataAnamnese?.gestanteLactante || 'Não');
-        }
-      } catch (e) { console.error("Erro ao buscar anamnese:", e); }
+      await carregarDadosDoPaciente(pacienteInfo.value);
     }
 
     // Reset aba atendimento
@@ -153,6 +170,16 @@ export default function Agenda() {
     setEditandoAnamnese(false); 
     setAbaModal('dados'); 
     setModalAberto(true);
+  };
+
+  // Chama a busca também caso ele troque de paciente no select de um Novo Agendamento
+  const aoMudarPaciente = async (selecionado) => {
+    setPacienteSelecionado(selecionado);
+    if (selecionado) {
+      await carregarDadosDoPaciente(selecionado.value);
+    } else {
+      setAlergias(''); setRoacutan('Não'); setGestanteLactante('Não'); setHistoricoPaciente([]);
+    }
   };
 
   // --- LÓGICA DE ANAMNESE ---
@@ -203,7 +230,7 @@ export default function Agenda() {
       status 
     };
 
-    // CASO 1: FINALIZAR ATENDIMENTO (Aba Prontuário + Agendamento Existente)
+    // CASO 1: FINALIZAR ATENDIMENTO
     if (abaModal === 'atendimento' && idEditando) {
       if (isFinalizado) return;
 
@@ -235,7 +262,7 @@ export default function Agenda() {
       }
     }
 
-    // CASO 2: SALVAMENTO COMUM (Editar hora, status ou criar novo)
+    // CASO 2: SALVAMENTO COMUM
     try {
       const url = idEditando ? `${API_URL}/agendamentos/${idEditando}` : `${API_URL}/agendamentos`;
       const metodo = idEditando ? 'PUT' : 'POST';
@@ -341,7 +368,7 @@ export default function Agenda() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full h-full flex flex-col animate-in fade-in">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-light text-gray-800">Agenda</h1>
@@ -415,12 +442,13 @@ export default function Agenda() {
       </div>
 
       {/* --- SUPER MODAL DE ATENDIMENTO --- */}
-      {modalAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[90vh] flex flex-col animate-in zoom-in-95">
+      {modalAberto && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-8">
+          {/* AQUI AUMENTAMOS DE max-w-2xl PARA max-w-5xl */}
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col animate-in zoom-in-95 duration-200">
             
             {/* Header Modal */}
-            <div className="p-6 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+            <div className="p-6 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">
                   {idEditando ? (abaModal === 'atendimento' ? 'Realizando Atendimento' : 'Editar Agendamento') : 'Novo Agendamento'}
@@ -432,7 +460,7 @@ export default function Agenda() {
 
             {/* Abas */}
             {idEditando && (
-              <div className="flex border-b px-6 overflow-x-auto">
+              <div className="flex border-b px-6 overflow-x-auto shrink-0">
                 <button 
                   onClick={() => setAbaModal('dados')}
                   className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${abaModal === 'dados' ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
@@ -460,17 +488,17 @@ export default function Agenda() {
                 
                 {/* ABA 1: DADOS DA AGENDA */}
                 {abaModal === 'dados' && (
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-w-2xl mx-auto">
                     <div>
                       <label className="block text-sm font-medium mb-1">Paciente</label>
-                      <Select options={opcoesPacientes} value={pacienteSelecionado} onChange={setPacienteSelecionado} placeholder="Selecione..." />
+                      <Select options={opcoesPacientes} value={pacienteSelecionado} onChange={aoMudarPaciente} placeholder="Selecione..." />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-1">Profissional</label>
                         <select value={profissionalId} onChange={e => setProfissionalId(e.target.value)} className="w-full p-2.5 bg-gray-50 border rounded-lg">
                           <option value="">Selecione...</option>
-                          {profissionais.filter(p => p.status === 'ativo' || p.id === profissionalId).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                          {profissionais.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
                         </select>
                       </div>
                       <div>
@@ -492,7 +520,7 @@ export default function Agenda() {
 
                 {/* ABA 2: ANAMNESE */}
                 {abaModal === 'anamnese' && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4">
+                  <div className="space-y-6 animate-in slide-in-from-right-4 max-w-2xl mx-auto">
                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
                       <div className="flex justify-between items-center mb-6">
                         <div>
@@ -562,73 +590,117 @@ export default function Agenda() {
                   </div>
                 )}
 
-                {/* ABA 3: ATENDIMENTO MÉDICO (Evolução + Insumos + Procedimentos) */}
+                {/* ABA 3: ATENDIMENTO MÉDICO EM DUAS COLUNAS */}
                 {abaModal === 'atendimento' && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-right-4 h-full">
                     
-                    {/* --- BLOQUEIO SE JÁ ESTIVER FINALIZADO --- */}
-                    {isFinalizado ? (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center flex flex-col items-center justify-center h-64">
-                        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
-                          <CheckCircle size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-emerald-800">Atendimento Concluído</h3>
-                        <p className="text-emerald-600 mt-2 max-w-sm">
-                          Este agendamento já foi finalizado. O estoque foi atualizado e a evolução salva no prontuário do paciente.
-                        </p>
-                      </div>
-                    ) : (
-                      /* --- FORMULÁRIO DE ATENDIMENTO (ATIVO) --- */
-                      <>
-                        {/* 1. Procedimentos */}
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><Briefcase size={18}/> Procedimentos Realizados</h3>
-                          <p className="text-xs text-gray-500 mb-2">Selecione o que foi feito nesta sessão.</p>
-                          <Select 
-                            isMulti 
-                            options={listaProcedimentos} 
-                            value={procedimentosSelecionados} 
-                            onChange={setProcedimentosSelecionados}
-                            placeholder="Selecione os procedimentos..."
-                            menuPortalTarget={document.body}
-                          />
-                        </div>
-
-                        {/* 2. Evolução */}
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><FileText size={18}/> Evolução do Paciente</h3>
-                          <div className="bg-white rounded-lg border overflow-hidden">
-                            <DefaultEditor value={textoEvolucao} onChange={e => setTextoEvolucao(e.target.value)} containerProps={{ style: { height: '150px', border: 'none' } }} />
+                    {/* COLUNA DA ESQUERDA: Formulário de Hoje */}
+                    <div className="space-y-6">
+                      {isFinalizado ? (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center flex flex-col items-center justify-center h-full min-h-[300px]">
+                          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                            <CheckCircle size={32} />
                           </div>
+                          <h3 className="text-xl font-bold text-emerald-800">Atendimento Concluído</h3>
+                          <p className="text-emerald-600 mt-2 max-w-sm">
+                            Este agendamento já foi finalizado. O estoque foi atualizado e a evolução salva no prontuário do paciente. Você pode consultar o histórico ao lado.
+                          </p>
                         </div>
+                      ) : (
+                        <>
+                          {/* 1. Procedimentos */}
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><Briefcase size={18}/> Procedimentos Realizados</h3>
+                            <p className="text-xs text-gray-500 mb-2">Selecione o que foi feito nesta sessão.</p>
+                            <Select 
+                              isMulti 
+                              options={listaProcedimentos} 
+                              value={procedimentosSelecionados} 
+                              onChange={setProcedimentosSelecionados}
+                              placeholder="Selecione os procedimentos..."
+                              menuPortalTarget={document.body}
+                              styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }} // <-- ADICIONE ESTA LINHA
+                            />
+                          </div>
 
-                        {/* 3. Insumos */}
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><Package size={18}/> Insumos Gastos na Sessão</h3>
-                          
-                          <div className="flex gap-2 mb-3">
-                            <div className="flex-1">
-                              <Select options={opcoesProdutos} value={produtoSelecionado} onChange={setProdutoSelecionado} placeholder="Produto usado..." menuPortalTarget={document.body} />
+                          {/* 2. Evolução */}
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><FileText size={18}/> Evolução de Hoje</h3>
+                            <div className="bg-white rounded-lg border overflow-hidden">
+                              <DefaultEditor value={textoEvolucao} onChange={e => setTextoEvolucao(e.target.value)} containerProps={{ style: { height: '180px', border: 'none' } }} />
                             </div>
-                            <input type="number" value={qtdInsumo} onChange={e => setQtdInsumo(e.target.value)} className="w-20 p-2 border rounded-lg" min="1" />
-                            <button type="button" onClick={adicionarInsumo} className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700"><Plus size={20}/></button>
                           </div>
 
-                          {insumosUsados.length > 0 ? (
-                            <ul className="space-y-2">
-                              {insumosUsados.map((item, idx) => (
-                                <li key={idx} className="flex justify-between items-center bg-white p-2 rounded border text-sm">
-                                  <span>{item.nome} <strong className="text-emerald-600">x{item.qtd}</strong></span>
-                                  <button type="button" onClick={() => removerInsumo(idx)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={14}/></button>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-xs text-gray-400 italic">Nenhum produto adicionado.</p>
-                          )}
-                        </div>
-                      </>
-                    )}
+                          {/* 3. Insumos */}
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><Package size={18}/> Insumos Gastos na Sessão</h3>
+                            
+                            <div className="flex gap-2 mb-3">
+                              <div className="flex-1">
+                                <Select 
+                                  options={opcoesProdutos} 
+                                  value={produtoSelecionado} 
+                                  onChange={setProdutoSelecionado} 
+                                  placeholder="Produto usado..." 
+                                  menuPortalTarget={document.body}
+                                  styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }}
+                                />
+                              </div>
+                              <input type="number" value={qtdInsumo} onChange={e => setQtdInsumo(e.target.value)} className="w-20 p-2 border rounded-lg" min="1" />
+                              <button type="button" onClick={adicionarInsumo} className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700"><Plus size={20}/></button>
+                            </div>
+
+                            {insumosUsados.length > 0 ? (
+                              <ul className="space-y-2">
+                                {insumosUsados.map((item, idx) => (
+                                  <li key={idx} className="flex justify-between items-center bg-white p-2 rounded border text-sm">
+                                    <span>{item.nome} <strong className="text-emerald-600">x{item.qtd}</strong></span>
+                                    <button type="button" onClick={() => removerInsumo(idx)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={14}/></button>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-gray-400 italic">Nenhum produto adicionado.</p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* COLUNA DA DIREITA: Histórico do Prontuário */}
+                    <div className="bg-gray-50 rounded-xl border border-gray-200 flex flex-col h-full max-h-[600px] overflow-hidden">
+                      <div className="p-4 border-b border-gray-200 bg-white shrink-0">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                          <History className="text-rose-600" size={20}/> Histórico do Paciente
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">Evoluções anteriores registradas.</p>
+                      </div>
+                      
+                      <div className="p-4 overflow-y-auto flex-1 space-y-4">
+                        {historicoPaciente.length === 0 ? (
+                          <div className="text-center py-10">
+                            <FileText size={40} className="mx-auto text-gray-300 mb-3" />
+                            <p className="text-sm text-gray-500 italic">Nenhum registro anterior encontrado para este paciente.</p>
+                          </div>
+                        ) : (
+                          historicoPaciente.map((ev) => (
+                            <div key={ev.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-rose-200 rounded-l-xl"></div>
+                              <div className="mb-2">
+                                <div className="text-xs font-bold text-gray-800 flex items-center gap-1">
+                                  <Clock size={12}/> {new Date(ev.data).toLocaleDateString('pt-BR')} às {new Date(ev.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                  Profissional: <span className="font-medium text-gray-700">{ev.profissional?.nome || 'Sistema'}</span>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-700 prose prose-sm max-w-none prose-rose" dangerouslySetInnerHTML={{ __html: ev.texto }} />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                 )}
 
@@ -636,7 +708,7 @@ export default function Agenda() {
             </div>
 
             {/* Footer com Ações */}
-            <div className="p-6 border-t bg-gray-50 rounded-b-2xl flex justify-between items-center">
+            <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-between items-center shrink-0">
               <div>
                 {idEditando && <button type="button" onClick={deletarAgendamento} className="text-rose-500 text-sm hover:underline">Excluir Agendamento</button>}
               </div>
@@ -659,12 +731,13 @@ export default function Agenda() {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL RELATÓRIO */}
-      {modalRelatorioAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      {modalRelatorioAberto && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold">Relatório</h2>
@@ -677,7 +750,8 @@ export default function Agenda() {
               <button onClick={baixarExcel} className="w-full py-2.5 bg-emerald-600 text-white rounded-lg flex justify-center gap-2"><FileSpreadsheet size={18}/> Excel</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

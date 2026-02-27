@@ -361,7 +361,7 @@ export default function Pacientes() {
                 )}
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              {/* <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800">Nova Evolução Diária</h3>
                 <div className="mb-4">
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1"><User size={16}/> Profissional Responsável</label>
@@ -378,7 +378,7 @@ export default function Pacientes() {
                     Registrar Evolução
                   </button>
                 </div>
-              </div>
+              </div> */}
 
               <div className="mt-8 pt-8 border-t border-gray-200">
                 <h3 className="text-lg font-semibold mb-6 text-gray-800 flex items-center gap-2">
